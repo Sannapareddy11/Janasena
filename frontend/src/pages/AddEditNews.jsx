@@ -11,6 +11,7 @@ const AddEditNews = () => {
 
   // Form Fields
   const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
   const [shortDescription, setShortDescription] = useState('');
   const [content, setContent] = useState('');
   const [status, setStatus] = useState('draft');
@@ -36,6 +37,7 @@ const AddEditNews = () => {
         try {
           const { data } = await API.get(`/admin/news/${id}`);
           setTitle(data.title || '');
+          setSlug(data.slug || '');
           setShortDescription(data.shortDescription || '');
           setContent(data.content || '');
           setStatus(data.status || 'draft');
@@ -96,6 +98,9 @@ const AddEditNews = () => {
     try {
       const formData = new FormData();
       formData.append('title', title.trim());
+      if (slug.trim()) {
+        formData.append('slug', slug.trim());
+      }
       formData.append('shortDescription', shortDescription.trim());
       formData.append('content', content.trim());
       formData.append('status', status);
@@ -189,6 +194,21 @@ const AddEditNews = () => {
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm text-black placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#DA2824] focus:ring-1 focus:ring-[#DA2824] transition-all"
                 />
+              </div>
+
+              {/* Custom Slug */}
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                  Custom URL Slug (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. my-custom-news-slug"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm text-black placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#DA2824] focus:ring-1 focus:ring-[#DA2824] transition-all"
+                />
+                <span className="text-[10px] text-slate-450 mt-1 block">Leave empty to auto-generate from the title.</span>
               </div>
 
               {/* Short Description */}

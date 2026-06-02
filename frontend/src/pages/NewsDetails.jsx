@@ -15,6 +15,7 @@ const NewsDetails = () => {
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
+  const [pageUrl, setPageUrl] = useState(window.location.href);
 
   useEffect(() => {
     const fetchArticleDetails = async () => {
@@ -23,6 +24,9 @@ const NewsDetails = () => {
         const { data } = await API.get(`/news/${slug}`);
         setArticle(data.news);
         setRelated(data.relatedNews || []);
+        if (data.detailPageUrl) {
+          setPageUrl(data.detailPageUrl);
+        }
       } catch (err) {
         console.error('Error fetching article:', err);
         // Redirect to home if 404 or invalid slug
@@ -48,7 +52,7 @@ const NewsDetails = () => {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+    navigator.clipboard.writeText(pageUrl);
     setShareCopied(true);
     setTimeout(() => setShareCopied(false), 2000);
   };
@@ -121,7 +125,7 @@ const NewsDetails = () => {
 
     <meta
       property="og:url"
-      content={window.location.href}
+      content={pageUrl}
     />
 
     {/* Twitter / WhatsApp */}
@@ -203,7 +207,7 @@ const NewsDetails = () => {
                 {shareCopied ? 'Copied!' : 'Copy Link'}
               </button>
               <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(window.location.href)}`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(pageUrl)}`}
                 target="_blank"
                 rel="noreferrer"
                 className="bg-slate-50 border border-slate-200 text-slate-500 hover:text-[#1da1f2] hover:bg-slate-100 p-2.5 rounded-full transition-colors cursor-pointer flex items-center justify-center"
@@ -214,7 +218,7 @@ const NewsDetails = () => {
               </a>
               <a
                href={`https://wa.me/?text=${encodeURIComponent(
-                window.location.href
+                pageUrl
               )}`}
                 target="_blank"
                 rel="noreferrer"
@@ -228,7 +232,7 @@ const NewsDetails = () => {
                 </svg>
               </a>
               <a
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`}
                 target="_blank"
                 rel="noreferrer"
                 className="bg-slate-50 border border-slate-200 text-slate-500 hover:text-[#1877f2] hover:bg-slate-100 p-2.5 rounded-full transition-colors cursor-pointer flex items-center justify-center"

@@ -113,9 +113,23 @@ const getNewsBySlug = async (req, res) => {
       .limit(3)
       .select('title slug shortDescription thumbnailImage publishedAt viewCount');
 
+    let origin = req.get('origin');
+    if (!origin && req.get('referer')) {
+      try {
+        origin = new URL(req.get('referer')).origin;
+      } catch (err) {}
+    }
+    if (!origin) {
+      // Fallback if no origin/referer
+      origin = `${req.protocol}://${req.get('host')}`.replace(':5001', ':5173');
+    }
+    
+    const detailPageUrl = `${origin}/news/${news.slug}`;
+
     res.json({
       news,
       relatedNews,
+      detailPageUrl,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -127,7 +141,7 @@ const getNewsBySlug = async (req, res) => {
 // @access  Private (Admin)
 const createNews = async (req, res) => {
   try {
-    const { title, shortDescription, content, status } = req.body;
+    const { title, shortDescription, content, status, slug: customSlug } = req.body;
 
     if (!title || !shortDescription || !content) {
       return res.status(400).json({ message: 'Please provide title, short description, and content' });
@@ -144,7 +158,7 @@ const createNews = async (req, res) => {
     const thumbnailImage = await uploadImage(thumbnailFile);
     const bannerImage = await uploadImage(bannerFile);
 
-    const slug = await generateUniqueSlug(title, News);
+    const slug = await generateUniqueSlug(customSlug || title, News);
 
     const news = new News({
       title,
@@ -172,7 +186,7 @@ const createNews = async (req, res) => {
 const updateNews = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, shortDescription, content, status } = req.body;
+    const { title, shortDescription, content, status, slug: customSlug } = req.body;
 
     const news = await News.findById(id);
 
@@ -182,7 +196,17 @@ const updateNews = async (req, res) => {
 
     if (title && title !== news.title) {
       news.title = title;
-      news.slug = await generateUniqueSlug(title, News, id);
+      // If no custom slug is provided at all, fallback to regenerating from title
+      if (!customSlug) {
+        news.slug = await generateUniqueSlug(title, News, id);
+      }
+    }
+
+    if (customSlug) {
+      const formattedSlug = slugify(customSlug);
+      if (formattedSlug !== news.slug) {
+        news.slug = await generateUniqueSlug(customSlug, News, id);
+      }
     }
 
     if (shortDescription) news.shortDescription = shortDescription;
