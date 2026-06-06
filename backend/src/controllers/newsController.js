@@ -121,7 +121,13 @@ const getNewsBySlug = async (req, res) => {
     }
     if (!origin) {
       // Fallback if no origin/referer
-      origin = `${req.protocol}://${req.get('host')}`.replace(':5001', ':5173');
+      const protocol = req.get('x-forwarded-proto') || req.protocol;
+      origin = `${protocol}://${req.get('host')}`.replace(':5001', ':5173');
+    }
+    
+    // Force HTTPS in production
+    if (origin.includes('janasenanews.com') && origin.startsWith('http://')) {
+      origin = origin.replace('http://', 'https://');
     }
     
     const detailPageUrl = `${origin}/news/${news.slug}`;
