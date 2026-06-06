@@ -1,5 +1,5 @@
 const News = require('../models/newsModel');
-const { uploadImage } = require('../config/cloudinary');
+const { uploadImage } = require('../config/storage');
 
 const slugify = (text) => {
   return text
