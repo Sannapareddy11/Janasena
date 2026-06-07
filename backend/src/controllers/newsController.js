@@ -75,11 +75,37 @@ const getAllNews = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
+    // Get origin for URLs
+    let origin = req.get('origin');
+    if (!origin && req.get('referer')) {
+      try {
+        origin = new URL(req.get('referer')).origin;
+      } catch (err) {}
+    }
+    if (!origin) {
+      const protocol = req.get('x-forwarded-proto') || req.protocol;
+      origin = `${protocol}://${req.get('host')}`.replace(':5001', ':5173');
+    }
+
+    // Force HTTPS in production
+    if (origin.includes('janasenanews.com') && origin.startsWith('http://')) {
+      origin = origin.replace('http://', 'https://');
+    }
+
+    // Add detailPageUrl to each article
+    const articlesWithUrls = articles.map(article => ({
+      ...article.toObject(),
+      detailPageUrl: `${origin}/news/${article.slug}`
+    }));
+
+    const logoUrl = `${origin}/src/assets/janasena_logo.png`;
+
     res.json({
-      articles,
+      articles: articlesWithUrls,
       page,
       pages: Math.ceil(total / limit),
       total,
+      logoUrl,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
