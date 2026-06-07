@@ -131,11 +131,13 @@ const getNewsBySlug = async (req, res) => {
     }
     
     const detailPageUrl = `${origin}/news/${news.slug}`;
+    const logoUrl = `${origin}/src/assets/janasena_logo.png`;
 
     res.json({
       news,
       relatedNews,
       detailPageUrl,
+      logoUrl,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -63,16 +63,28 @@ const AddEditNews = () => {
   const handleThumbnailChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Thumbnail image size should be less than 5MB');
+        e.target.value = '';
+        return;
+      }
       setThumbnailFile(file);
       setThumbnailPreview(URL.createObjectURL(file));
+      setError(''); // Clear error if successful
     }
   };
 
   const handleBannerChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Banner image size should be less than 5MB');
+        e.target.value = '';
+        return;
+      }
       setBannerFile(file);
       setBannerPreview(URL.createObjectURL(file));
+      setError(''); // Clear error if successful
     }
   };
 
