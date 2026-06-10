@@ -1,5 +1,6 @@
 const News = require('../models/newsModel');
 const { uploadImage } = require('../config/storage');
+const { sendNewsPublishedNotification } = require('../services/pushNotificationService');
 
 const slugify = (text) => {
   return text
@@ -207,6 +208,11 @@ const createNews = async (req, res) => {
     });
 
     const createdNews = await news.save();
+
+    if (createdNews.status === 'published') {
+      sendNewsPublishedNotification(createdNews);
+    }
+
     res.status(201).json(createdNews);
   } catch (error) {
     console.error('CREATE NEWS ERROR:', error);
@@ -227,6 +233,8 @@ const updateNews = async (req, res) => {
     if (!news) {
       return res.status(404).json({ message: 'News article not found' });
     }
+
+    const wasPublished = news.status === 'published';
 
     if (title && title !== news.title) {
       news.title = title;
@@ -264,6 +272,11 @@ const updateNews = async (req, res) => {
     }
 
     const updatedNews = await news.save();
+
+    if (!wasPublished && updatedNews.status === 'published') {
+      sendNewsPublishedNotification(updatedNews);
+    }
+
     res.json(updatedNews);
   } catch (error) {
     console.error('UPDATE NEWS ERROR:', error);

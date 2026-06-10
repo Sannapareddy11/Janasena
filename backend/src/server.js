@@ -5,11 +5,13 @@ dotenv.config();
 const app = require('./app');
 const connectDB = require('./config/db');
 const Admin = require('./models/adminModel');
+const { initFirebase } = require('./config/firebase');
 
 const PORT = process.env.PORT || 5000;
 
 // Connect to Database
 connectDB().then(() => {
+  initFirebase();
   // Seed admin and start server
   seedAdmin().then(() => {
     app.listen(PORT, () => {
