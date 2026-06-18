@@ -4,6 +4,8 @@ const path = require('path');
 const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes');
 const newsRoutes = require('./routes/newsRoutes');
+const deletionRequestRoutes = require('./routes/deletionRequestRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 
 const app = express();
 
@@ -19,6 +21,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api', newsRoutes); // handles /api/news and /api/admin/news
+app.use('/api/deletion-request', deletionRequestRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Base status route
 app.get('/', (req, res) => {

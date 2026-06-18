@@ -8,11 +8,17 @@ import Signup from './pages/Signup';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AddEditNews from './pages/AddEditNews';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsAndConditions from './pages/TermsAndConditions';
+import Contact from './pages/Contact';
+import DataDeletionRequest from './pages/DataDeletionRequest';
+import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Public Routes */}
         <Route
@@ -52,6 +58,38 @@ function App() {
           element={
             <PageLayout>
               <AdminLogin />
+            </PageLayout>
+          }
+        />
+        <Route
+          path="/privacy-policy"
+          element={
+            <PageLayout>
+              <PrivacyPolicy />
+            </PageLayout>
+          }
+        />
+        <Route
+          path="/terms"
+          element={
+            <PageLayout>
+              <TermsAndConditions />
+            </PageLayout>
+          }
+        />
+        <Route
+          path="/contact"
+          element={
+            <PageLayout>
+              <Contact />
+            </PageLayout>
+          }
+        />
+        <Route
+          path="/delete-account"
+          element={
+            <PageLayout>
+              <DataDeletionRequest />
             </PageLayout>
           }
         />

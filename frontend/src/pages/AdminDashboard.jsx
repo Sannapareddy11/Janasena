@@ -16,13 +16,17 @@ import {
   EyeOff,
   ChevronRight,
   TrendingUp,
+  MessageSquare,
+  UserX,
 } from 'lucide-react';
 import API, { getImageUrl } from '../services/api';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' or 'news'
+  const [activeTab, setActiveTab] = useState('analytics'); // 'analytics', 'news', 'contacts', 'deletion-requests'
   const [analytics, setAnalytics] = useState(null);
   const [newsList, setNewsList] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [deletionRequests, setDeletionRequests] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -66,15 +70,49 @@ const AdminDashboard = () => {
     }
   };
 
+  // Fetch Contacts data
+  const fetchContacts = async () => {
+    try {
+      const { data } = await API.get('/admin/contacts', {
+        params: { page, limit: 10 },
+      });
+      setContacts(data.messages || []);
+      setTotalPages(data.pages || 1);
+    } catch (err) {
+      console.error('Error fetching contacts:', err);
+    }
+  };
+
+  // Fetch Deletion Requests data
+  const fetchDeletionRequests = async () => {
+    try {
+      const { data } = await API.get('/admin/deletion-requests', {
+        params: { page, limit: 10 },
+      });
+      setDeletionRequests(data.requests || []);
+      setTotalPages(data.pages || 1);
+    } catch (err) {
+      console.error('Error fetching deletion requests:', err);
+    }
+  };
+
   // Combined Initializer/Reloader
   useEffect(() => {
     const loadDashboardData = async () => {
       setLoading(true);
-      await Promise.all([fetchAnalytics(), fetchNewsList()]);
+      if (activeTab === 'analytics') {
+        await Promise.all([fetchAnalytics(), fetchNewsList()]);
+      } else if (activeTab === 'news') {
+        await fetchNewsList();
+      } else if (activeTab === 'contacts') {
+        await fetchContacts();
+      } else if (activeTab === 'deletion-requests') {
+        await fetchDeletionRequests();
+      }
       setLoading(false);
     };
     loadDashboardData();
-  }, [page, searchQuery]);
+  }, [page, searchQuery, activeTab]);
 
   // Handle Publish/Unpublish status toggle
   const handleToggleStatus = async (id, currentStatus) => {
@@ -116,6 +154,51 @@ const AdminDashboard = () => {
     });
   };
 
+  // Handle delete contact
+  const handleDeleteContact = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this contact message?')) {
+      return;
+    }
+    setActionLoading(id);
+    try {
+      await API.delete(`/admin/contacts/${id}`);
+      await fetchContacts();
+    } catch (err) {
+      console.error('Error deleting contact:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle update deletion request status
+  const handleUpdateDeletionRequest = async (id, status) => {
+    setActionLoading(id);
+    try {
+      await API.put(`/admin/deletion-requests/${id}`, { status });
+      await fetchDeletionRequests();
+    } catch (err) {
+      console.error('Error updating deletion request:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle delete deletion request
+  const handleDeleteDeletionRequest = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this deletion request?')) {
+      return;
+    }
+    setActionLoading(id);
+    try {
+      await API.delete(`/admin/deletion-requests/${id}`);
+      await fetchDeletionRequests();
+    } catch (err) {
+      console.error('Error deleting deletion request:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start min-h-[70vh]">
       {/* Sidebar Navigation */}
@@ -146,6 +229,28 @@ const AdminDashboard = () => {
             >
               <Newspaper size={18} />
               Article Manager
+            </button>
+            <button
+              onClick={() => setActiveTab('contacts')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition-all cursor-pointer ${
+                activeTab === 'contacts'
+                  ? 'bg-[#DA2824] text-white shadow-lg shadow-red-600/10'
+                  : 'text-slate-650 hover:text-[#DA2824] hover:bg-slate-50'
+              }`}
+            >
+              <MessageSquare size={18} />
+              Contact Messages
+            </button>
+            <button
+              onClick={() => setActiveTab('deletion-requests')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition-all cursor-pointer ${
+                activeTab === 'deletion-requests'
+                  ? 'bg-[#DA2824] text-white shadow-lg shadow-red-600/10'
+                  : 'text-slate-650 hover:text-[#DA2824] hover:bg-slate-50'
+              }`}
+            >
+              <UserX size={18} />
+              Deletion Requests
             </button>
           </nav>
         </div>
@@ -275,7 +380,7 @@ const AdminDashboard = () => {
               </>
             )}
           </div>
-        ) : (
+        ) : activeTab === 'news' ? (
           /* TAB 2: ARTICLE LIST TABLE */
           <div className="space-y-6">
             <div className="border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -421,7 +526,188 @@ const AdminDashboard = () => {
               </div>
             )}
           </div>
-        )}
+        ) : activeTab === 'contacts' ? (
+          /* TAB 3: CONTACT MESSAGES */
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-4">
+              <h2 className="text-2xl font-extrabold text-[#DA2824] heading-display">Contact Messages</h2>
+              <p className="text-slate-500 text-sm mt-1">View and manage contact form submissions.</p>
+            </div>
+
+            <div className="overflow-x-auto border border-slate-200/80 rounded-2xl shadow-sm">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200/80">
+                    <th className="py-4 px-4">Name</th>
+                    <th className="py-4 px-4">Email</th>
+                    <th className="py-4 px-4">Subject</th>
+                    <th className="py-4 px-4">Date</th>
+                    <th className="py-4 px-4">Status</th>
+                    <th className="py-4 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm text-black">
+                  {contacts.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center py-12 text-slate-400 italic">
+                        No contact messages yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    contacts.map((contact) => (
+                      <tr key={contact._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3.5 px-4 font-semibold">{contact.name}</td>
+                        <td className="py-3.5 px-4 text-slate-600">{contact.email}</td>
+                        <td className="py-3.5 px-4 max-w-xs truncate">{contact.subject}</td>
+                        <td className="py-3.5 px-4 text-slate-500">{formatDate(contact.createdAt)}</td>
+                        <td className="py-3.5 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                            contact.status === 'new' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                            contact.status === 'read' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            'bg-green-50 text-green-700 border border-green-200'
+                          }`}>
+                            {contact.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => handleDeleteContact(contact._id)}
+                            disabled={actionLoading === contact._id}
+                            className="p-1.5 bg-red-50 hover:bg-[#DA2824] text-[#DA2824] hover:text-white rounded-lg border border-[#DA2824]/20 hover:border-[#DA2824] transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2.5 pt-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                  disabled={page === 1}
+                  className="bg-white border border-slate-200 text-slate-650 hover:text-[#DA2824] hover:bg-slate-50 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                >
+                  Prev
+                </button>
+                <span className="text-xs font-bold text-slate-500">{page} / {totalPages}</span>
+                <button
+                  onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={page === totalPages}
+                  className="bg-white border border-slate-200 text-slate-650 hover:text-[#DA2824] hover:bg-slate-50 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'deletion-requests' ? (
+          /* TAB 4: DELETION REQUESTS */
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-4">
+              <h2 className="text-2xl font-extrabold text-[#DA2824] heading-display">Deletion Requests</h2>
+              <p className="text-slate-500 text-sm mt-1">Process account and data deletion requests.</p>
+            </div>
+
+            <div className="overflow-x-auto border border-slate-200/80 rounded-2xl shadow-sm">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200/80">
+                    <th className="py-4 px-4">Name</th>
+                    <th className="py-4 px-4">Email</th>
+                    <th className="py-4 px-4">Reason</th>
+                    <th className="py-4 px-4">Date</th>
+                    <th className="py-4 px-4">Status</th>
+                    <th className="py-4 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm text-black">
+                  {deletionRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center py-12 text-slate-400 italic">
+                        No deletion requests yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    deletionRequests.map((request) => (
+                      <tr key={request._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3.5 px-4 font-semibold">{request.name}</td>
+                        <td className="py-3.5 px-4 text-slate-600">{request.email}</td>
+                        <td className="py-3.5 px-4 max-w-xs truncate">{request.reason || 'N/A'}</td>
+                        <td className="py-3.5 px-4 text-slate-500">{formatDate(request.createdAt)}</td>
+                        <td className="py-3.5 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                            request.status === 'pending' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                            request.status === 'processing' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            request.status === 'completed' ? 'bg-green-50 text-green-700 border border-green-200' :
+                            'bg-red-50 text-red-700 border border-red-200'
+                          }`}>
+                            {request.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {request.status === 'pending' && (
+                              <button
+                                onClick={() => handleUpdateDeletionRequest(request._id, 'processing')}
+                                disabled={actionLoading === request._id}
+                                className="p-1.5 bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white rounded-lg border border-amber-200 hover:border-amber-500 transition-colors cursor-pointer disabled:opacity-50"
+                                title="Mark as Processing"
+                              >
+                                <CheckCircle size={14} />
+                              </button>
+                            )}
+                            {request.status === 'processing' && (
+                              <button
+                                onClick={() => handleUpdateDeletionRequest(request._id, 'completed')}
+                                disabled={actionLoading === request._id}
+                                className="p-1.5 bg-green-50 hover:bg-green-500 text-green-700 hover:text-white rounded-lg border border-green-200 hover:border-green-500 transition-colors cursor-pointer disabled:opacity-50"
+                                title="Complete & Delete Account"
+                              >
+                                <CheckCircle size={14} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteDeletionRequest(request._id)}
+                              disabled={actionLoading === request._id}
+                              className="p-1.5 bg-red-50 hover:bg-[#DA2824] text-[#DA2824] hover:text-white rounded-lg border border-[#DA2824]/20 hover:border-[#DA2824] transition-colors cursor-pointer disabled:opacity-50"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2.5 pt-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                  disabled={page === 1}
+                  className="bg-white border border-slate-200 text-slate-650 hover:text-[#DA2824] hover:bg-slate-50 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                >
+                  Prev
+                </button>
+                <span className="text-xs font-bold text-slate-500">{page} / {totalPages}</span>
+                <button
+                  onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={page === totalPages}
+                  className="bg-white border border-slate-200 text-slate-650 hover:text-[#DA2824] hover:bg-slate-50 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );
