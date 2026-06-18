@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import API from '../services/api';
 
 const DataDeletionRequest = () => {
   const [formData, setFormData] = useState({
@@ -25,7 +25,7 @@ const DataDeletionRequest = () => {
     setSuccess(false);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/deletion-request', formData);
+      const response = await API.post('/deletion-request', formData);
       setSuccess(true);
       setFormData({ name: '', email: '', reason: '' });
     } catch (err) {
