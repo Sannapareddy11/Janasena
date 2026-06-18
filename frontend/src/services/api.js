@@ -4,8 +4,8 @@ const getBaseURL = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  const hostname = window.location.hostname || 'localhost';
-  return `http://${hostname}:5001/api`;
+
+  return '/api';
 };
 
 const API = axios.create({
@@ -26,8 +26,7 @@ export const getImageUrl = (url) => {
     return url;
   }
 
-  const pageHostname = window.location.hostname || 'localhost';
-  let base = `http://${pageHostname}:5001`;
+  let base = '';
 
   if (import.meta.env.VITE_API_URL) {
     base = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
